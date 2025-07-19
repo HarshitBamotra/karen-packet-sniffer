@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -10,6 +13,7 @@ import (
 )
 
 func main() {
+
 	devices, err := pcap.FindAllDevs()
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +29,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer fmt.Println("\nKaren is done sniffing.")
 	defer handle.Close()
+
+	// ctrl+c cleanup
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		fmt.Println("\nKaren is done sniffing.")
+		handle.Close()
+		os.Exit(0)
+	}()
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
