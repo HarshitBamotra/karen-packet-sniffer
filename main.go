@@ -30,6 +30,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	handle.SetBPFFilter("tcp")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	defer fmt.Println("\nKaren is done sniffing.")
 	defer handle.Close()
 
