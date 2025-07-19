@@ -52,5 +52,8 @@ func main() {
 			fmt.Printf("UDP: %d → %d\n", udp.SrcPort, udp.DstPort)
 		}
 
+		if app := packet.ApplicationLayer(); app != nil {
+			fmt.Printf("Payload: %s\n", app.Payload())
+		}
 	}
 }
