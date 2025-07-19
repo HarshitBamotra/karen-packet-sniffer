@@ -10,6 +10,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/google/gopacket/pcapgo"
 )
 
 func main() {
@@ -32,6 +33,18 @@ func main() {
 	defer fmt.Println("\nKaren is done sniffing.")
 	defer handle.Close()
 
+	f, err := os.Create("capture.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	writer := pcapgo.NewWriter(f)
+	err = writer.WriteFileHeader(1600, handle.LinkType())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// ctrl+c cleanup
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -39,12 +52,15 @@ func main() {
 		<-sigCh
 		fmt.Println("\nKaren is done sniffing.")
 		handle.Close()
+		f.Close()
 		os.Exit(0)
 	}()
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
 		// fmt.Println(packet)
+		writer.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
+
 		fmt.Println()
 
 		if ethLayer := packet.Layer(layers.LayerTypeEthernet); ethLayer != nil {
