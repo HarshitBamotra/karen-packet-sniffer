@@ -20,7 +20,7 @@ func main() {
 	}
 
 	prompt := promptui.Select{
-		Label: "Select",
+		Label: "Select interface to sniff on",
 		Items: devices,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . }}",
