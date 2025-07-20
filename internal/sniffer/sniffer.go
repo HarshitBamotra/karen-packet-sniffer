@@ -1,11 +1,13 @@
-package main
+package sniffer
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -13,36 +15,34 @@ import (
 	"github.com/google/gopacket/pcapgo"
 )
 
-func main() {
+func Start(device string, filter string) {
 
-	devices, err := pcap.FindAllDevs()
+	fmt.Printf("Sniffing on %s with filter: %s\n", device, filter)
+
+	handle, err := pcap.OpenLive(device, 3200, true, pcap.BlockForever)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Available Devices: ")
-
-	for _, device := range devices {
-		fmt.Println(device.Name)
+	if filter != "" {
+		if err := handle.SetBPFFilter(filter); err != nil {
+			log.Printf("Error setting filter: %v", err)
+		}
 	}
 
-	handle, err := pcap.OpenLive("wlo1", 1600, true, pcap.BlockForever)
-	if err != nil {
-		log.Fatal(err)
-	}
-	handle.SetBPFFilter("tcp")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer fmt.Println("\nKaren is done sniffing.")
 	defer handle.Close()
 
-	f, err := os.Create("capture.txt")
+	f, err := os.Create("capture.pcap")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Logs will be saved in %s/capture.pcap\n", dir)
+	time.Sleep(3 * time.Second)
 
 	writer := pcapgo.NewWriter(f)
 	err = writer.WriteFileHeader(1600, handle.LinkType())
@@ -56,10 +56,10 @@ func main() {
 	go func() {
 		<-sigCh
 		fmt.Println("\nKaren is done sniffing.")
-		handle.Close()
-		f.Close()
 		os.Exit(0)
 	}()
+
+	fmt.Println("Karen is watching")
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
@@ -89,7 +89,8 @@ func main() {
 		}
 
 		if app := packet.ApplicationLayer(); app != nil {
-			fmt.Printf("Payload: %s\n", app.Payload())
+			fmt.Printf("Payload (hex): %s\n", hex.Dump(app.Payload()))
 		}
 	}
+
 }
