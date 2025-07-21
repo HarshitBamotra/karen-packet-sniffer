@@ -1,7 +1,7 @@
 package main
 
 import (
-	"karen/internal/sniffer"
+	"karen/internal/sniffer_cli"
 	"log"
 
 	"github.com/google/gopacket/pcap"
@@ -47,15 +47,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sniffer.Start(iface, filter)
-
-	// iface := flag.String("iface", "", "Interface to sniff on")
-	// filter := flag.String("filter", "", "BPF FIlter")
-	// flag.Parse()
-
-	// if *iface == "" {
-	// 	log.Fatal("Please provide a network interface using --iface")
-	// }
-
-	// sniffer.Start(*iface, *filter)
+	sniffer_cli.Start(iface, filter)
 }
